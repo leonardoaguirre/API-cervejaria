@@ -23,12 +23,12 @@ public class CervejaService {
 
     private final CervejaMapper cervejaMapper = CervejaMapper.INSTANCE;
 
-    public ResponseMessage criaCerveja(CervejaDTO cervejaDTO) throws BebidaJaRegistradaException {
+    public CervejaDTO criaCerveja(CervejaDTO cervejaDTO) throws BebidaJaRegistradaException {
         verificaSeJaEstaCastrada(cervejaDTO.getNome());
         Cerveja cerveja_a_salvar = cervejaMapper.toModel(cervejaDTO);
 
         Cerveja cervejaSalva = cervejaRepository.save(cerveja_a_salvar);
-        return getResponseMessage(cervejaSalva,"Cerveja salva com sucesso! id: ");
+        return cervejaMapper.toDTO(cervejaSalva);
     }
     public CervejaDTO procuraPorNome(String nome) throws BebidaNaoEncontradaException {
         Cerveja cerveja = cervejaRepository.findByNome(nome)

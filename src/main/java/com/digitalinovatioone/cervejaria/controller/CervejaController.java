@@ -22,7 +22,7 @@ public class CervejaController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseMessage criaCerveja(@RequestBody @Valid CervejaDTO cervejaDTO) throws BebidaJaRegistradaException {
+    public CervejaDTO criaCerveja(@RequestBody @Valid CervejaDTO cervejaDTO) throws BebidaJaRegistradaException {
         return cervejaService.criaCerveja(cervejaDTO);
     }
 
