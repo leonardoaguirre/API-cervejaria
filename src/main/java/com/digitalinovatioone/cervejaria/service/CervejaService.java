@@ -6,6 +6,7 @@ import com.digitalinovatioone.cervejaria.entity.Cerveja;
 import com.digitalinovatioone.cervejaria.exception.BebidaJaRegistradaException;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoEncontradaException;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoExisteException;
+import com.digitalinovatioone.cervejaria.exception.EstoqueDeBebidaExcedidoException;
 import com.digitalinovatioone.cervejaria.mapper.CervejaMapper;
 import com.digitalinovatioone.cervejaria.repository.CervejaRepository;
 import lombok.AllArgsConstructor;
@@ -70,4 +71,14 @@ public class CervejaService {
                 .build();
     }
 
+    public CervejaDTO incrementar(Long id, int quantidade_a_incrementar) throws BebidaNaoExisteException, EstoqueDeBebidaExcedidoException {
+        Cerveja cervejaEncontrada = verificaSeExiste(id);
+        if (cervejaEncontrada.getMax()>=quantidade_a_incrementar+cervejaEncontrada.getQuantidade()){
+            cervejaEncontrada.setQuantidade(cervejaEncontrada.getQuantidade()+quantidade_a_incrementar);
+            Cerveja cervejaSalva = cervejaRepository.save(cervejaEncontrada);
+            return cervejaMapper.toDTO(cervejaSalva);
+        }else {
+            throw new EstoqueDeBebidaExcedidoException(id,quantidade_a_incrementar);
+        }
+    }
 }

@@ -2,14 +2,21 @@ package com.digitalinovatioone.cervejaria.controller;
 
 import com.digitalinovatioone.cervejaria.builder.CervejaDTOBuilder;
 import com.digitalinovatioone.cervejaria.dto.CervejaDTO;
+import com.digitalinovatioone.cervejaria.dto.response.QuantidadeDTO;
+import com.digitalinovatioone.cervejaria.entity.Cerveja;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoEncontradaException;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoExisteException;
+import com.digitalinovatioone.cervejaria.exception.EstoqueDeBebidaExcedidoException;
+import com.digitalinovatioone.cervejaria.mapper.CervejaMapper;
 import com.digitalinovatioone.cervejaria.service.CervejaService;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.internal.junit.JUnitTestRule;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
@@ -30,8 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 public class CervejaControllerTest {
     private final String CERVEJA_API_URL = "/api/v1/cervejas";
-    private final String CERVEJA_API_URL_SUBPATH_INCREMENT = "/increment";
-    private final String CERVEJA_API_URL_SUBPATH_DECREMENT = "/decrement";
+    private final String CERVEJA_API_URL_SUBPATH_INCREMENT = "/incrementar";
+    private final String CERVEJA_API_URL_SUBPATH_DECREMENT = "/decrementar";
     private final Long ID_CERVEJA_VALIDO = 1L;
     private final Long ID_CERVEJA_INVALIDO = 2L;
 
@@ -151,5 +158,54 @@ public class CervejaControllerTest {
         mockMvc.perform(delete(CERVEJA_API_URL+"/"+ID_CERVEJA_INVALIDO)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void quandoPATCHChamadoParaIncrementarEntaoRetornaStatusOK() throws Exception {
+        QuantidadeDTO quantidadeDTO = QuantidadeDTO.builder().quantidade(15).build();
+
+        CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        cervejaDTO.setQuantidade(cervejaDTO.getQuantidade()+quantidadeDTO.getQuantidade());
+
+        when(cervejaService.incrementar(ID_CERVEJA_VALIDO,quantidadeDTO.getQuantidade())).thenReturn(cervejaDTO);
+
+        mockMvc.perform(patch(CERVEJA_API_URL+"/"+ID_CERVEJA_VALIDO+CERVEJA_API_URL_SUBPATH_INCREMENT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(quantidadeDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", is(cervejaDTO.getNome())))
+                .andExpect(jsonPath("$.marca", is(cervejaDTO.getMarca())))
+                .andExpect(jsonPath("$.tipoCerveja", is(cervejaDTO.getTipoCerveja().toString())))
+                .andExpect(jsonPath("$.quantidade", is(cervejaDTO.getQuantidade())));
+    }
+    @Test
+    void quandoPATCHChamadoParaIncrementarMaiorQueoMaximoEntaoRetornaStatusBadRequestK() throws Exception {
+        QuantidadeDTO quantidadeDTO = QuantidadeDTO.builder().quantidade(45).build();
+
+        CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        cervejaDTO.setQuantidade(cervejaDTO.getQuantidade()+quantidadeDTO.getQuantidade());
+
+        when(cervejaService.incrementar(ID_CERVEJA_VALIDO,quantidadeDTO.getQuantidade())).thenThrow(EstoqueDeBebidaExcedidoException.class);
+
+        mockMvc.perform(patch(CERVEJA_API_URL+"/"+ID_CERVEJA_VALIDO+CERVEJA_API_URL_SUBPATH_INCREMENT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(quantidadeDTO)))
+                .andExpect(status().isBadRequest())
+        ;
+    }
+    @Test
+    void quandoPATCHChamadoParaIncrementarComIdCervejaInvalidoEntaoRetornaStatusBadRequestK() throws Exception {
+        QuantidadeDTO quantidadeDTO = QuantidadeDTO.builder().quantidade(15).build();
+
+        CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        cervejaDTO.setQuantidade(cervejaDTO.getQuantidade()+quantidadeDTO.getQuantidade());
+
+        when(cervejaService.incrementar(ID_CERVEJA_INVALIDO,quantidadeDTO.getQuantidade())).thenThrow(BebidaNaoExisteException.class);
+
+        mockMvc.perform(patch(CERVEJA_API_URL+"/"+ID_CERVEJA_INVALIDO+CERVEJA_API_URL_SUBPATH_INCREMENT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(quantidadeDTO)))
+                .andExpect(status().isNotFound())
+        ;
     }
 }

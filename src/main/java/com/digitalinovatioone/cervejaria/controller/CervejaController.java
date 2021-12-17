@@ -1,10 +1,12 @@
 package com.digitalinovatioone.cervejaria.controller;
 
 import com.digitalinovatioone.cervejaria.dto.CervejaDTO;
+import com.digitalinovatioone.cervejaria.dto.response.QuantidadeDTO;
 import com.digitalinovatioone.cervejaria.dto.response.ResponseMessage;
 import com.digitalinovatioone.cervejaria.exception.BebidaJaRegistradaException;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoEncontradaException;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoExisteException;
+import com.digitalinovatioone.cervejaria.exception.EstoqueDeBebidaExcedidoException;
 import com.digitalinovatioone.cervejaria.service.CervejaService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,11 @@ public class CervejaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletarCerveja(@PathVariable Long id) throws BebidaNaoExisteException {
         cervejaService.deletaPorId(id);
+    }
+
+    @PatchMapping("/{id}/incrementar")
+    public CervejaDTO incrementar(@PathVariable Long id, @RequestBody @Valid QuantidadeDTO quantidadeDTO) throws BebidaNaoExisteException, EstoqueDeBebidaExcedidoException {
+        return cervejaService.incrementar(id,quantidadeDTO.getQuantidade());
     }
 
 }
