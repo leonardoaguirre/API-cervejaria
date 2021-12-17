@@ -54,4 +54,8 @@ public class CervejaController {
         return cervejaService.incrementar(id,quantidadeDTO.getQuantidade());
     }
 
+    @PatchMapping("/{id}/decrementar")
+    public CervejaDTO decrementar(@PathVariable Long id, @RequestBody @Valid QuantidadeDTO quantidadeDTO) throws BebidaNaoExisteException, EstoqueDeBebidaExcedidoException {
+        return cervejaService.decrementar(id,quantidadeDTO.getQuantidade());
+    }
 }

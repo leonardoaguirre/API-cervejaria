@@ -81,4 +81,15 @@ public class CervejaService {
             throw new EstoqueDeBebidaExcedidoException(id,quantidade_a_incrementar);
         }
     }
+
+    public CervejaDTO decrementar(Long id, Integer quantidade_a_decrementar) throws BebidaNaoExisteException, EstoqueDeBebidaExcedidoException {
+        Cerveja cervejaEncontrada = verificaSeExiste(id);
+        if(cervejaEncontrada.getQuantidade() - quantidade_a_decrementar >=0){
+            cervejaEncontrada.setQuantidade(cervejaEncontrada.getQuantidade() - quantidade_a_decrementar);
+            Cerveja cervejaSalva = cervejaRepository.save(cervejaEncontrada);
+            return cervejaMapper.toDTO(cervejaSalva);
+        }else {
+            throw new EstoqueDeBebidaExcedidoException(id,quantidade_a_decrementar);
+        }
+    }
 }
