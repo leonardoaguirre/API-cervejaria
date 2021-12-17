@@ -5,10 +5,9 @@ import com.digitalinovatioone.cervejaria.dto.CervejaDTO;
 import com.digitalinovatioone.cervejaria.entity.Cerveja;
 import com.digitalinovatioone.cervejaria.exception.BebidaJaRegistradaException;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoEncontradaException;
+import com.digitalinovatioone.cervejaria.exception.BebidaNaoExisteException;
 import com.digitalinovatioone.cervejaria.mapper.CervejaMapper;
 import com.digitalinovatioone.cervejaria.repository.CervejaRepository;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.*;
@@ -24,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-public class ServejaServiceTest {
+public class CervejaServiceTest {
     private static final Long ID_CERVEJA_INVALIDO =1L;
 
     @Mock
@@ -90,4 +92,39 @@ public class ServejaServiceTest {
                 ()->cervejaService.procuraPorNome(cervejaProcuradaEsperadaDTO.getNome()));
     }
 
+    @Test
+    void quandoListaCervejaChamadoRetornaUmaListaDeCerveja() {
+        //Given
+        CervejaDTO cervejaProcuradaEsperadaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        Cerveja cervejaProcuradaEsperada = cervejaMapper.toModel(cervejaProcuradaEsperadaDTO);
+        //When
+        Mockito.when(cervejaRepository.findAll()).thenReturn(Collections.singletonList(cervejaProcuradaEsperada));
+        //Then
+        List<CervejaDTO> listaDeCervejas = cervejaService.listar();
+        assertThat(listaDeCervejas, is(not(empty())));
+        assertThat(listaDeCervejas.get(0), is(equalTo(cervejaProcuradaEsperadaDTO)));
+    }
+    @Test
+    void quandoListaCervejaChamadoRetornaUmaListaDeCervejaVazia() {
+        //When
+        Mockito.when(cervejaRepository.findAll()).thenReturn(Collections.emptyList());
+        //Then
+        List<CervejaDTO> listaDeCervejas = cervejaService.listar();
+        assertThat(listaDeCervejas, is(empty()));
+    }
+
+    @Test
+    void quandoDeleteChamadoComIdValidoCervejaDeveSerExcluida() throws BebidaNaoExisteException {
+        //Given
+        CervejaDTO cervejaDeletadaEsperadaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        Cerveja cervejaDeletadaEsperada = cervejaMapper.toModel(cervejaDeletadaEsperadaDTO);
+        //When
+        Mockito.when(cervejaRepository.findById(cervejaDeletadaEsperadaDTO.getId())).thenReturn(Optional.of(cervejaDeletadaEsperada));
+        Mockito.doNothing().when(cervejaRepository).deleteById(cervejaDeletadaEsperadaDTO.getId());
+        //then
+        cervejaService.deletaPorId(cervejaDeletadaEsperadaDTO.getId());
+
+        Mockito.verify(cervejaRepository, Mockito.times(1)).findById(cervejaDeletadaEsperadaDTO.getId());
+        Mockito.verify(cervejaRepository, Mockito.times(1)).deleteById(cervejaDeletadaEsperadaDTO.getId());
+    }
 }

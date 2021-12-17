@@ -3,6 +3,7 @@ package com.digitalinovatioone.cervejaria.controller;
 import com.digitalinovatioone.cervejaria.builder.CervejaDTOBuilder;
 import com.digitalinovatioone.cervejaria.dto.CervejaDTO;
 import com.digitalinovatioone.cervejaria.exception.BebidaNaoEncontradaException;
+import com.digitalinovatioone.cervejaria.exception.BebidaNaoExisteException;
 import com.digitalinovatioone.cervejaria.service.CervejaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,11 +17,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
+import java.util.Collections;
+import java.util.List;
+
 import static com.digitalinovatioone.cervejaria.utils.JsonConvertionUtils.asJsonString;
 import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -83,7 +86,7 @@ public class CervejaControllerTest {
         //given
         CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
         //When
-        when(cervejaController.buscarPorNome(cervejaDTO.getNome())).thenReturn(cervejaDTO);
+        when(cervejaService.procuraPorNome(cervejaDTO.getNome())).thenReturn(cervejaDTO);
         //then
         mockMvc.perform(get(CERVEJA_API_URL+"/"+cervejaDTO.getNome())
                 .contentType(MediaType.APPLICATION_JSON))
@@ -100,6 +103,52 @@ public class CervejaControllerTest {
         when(cervejaService.procuraPorNome(cervejaDTO.getNome())).thenThrow(BebidaNaoEncontradaException.class);
         //then
         mockMvc.perform(get(CERVEJA_API_URL+"/"+cervejaDTO.getNome())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+    @Test
+    void quandoGETListChamadoEntaoStatusOKRetornado() throws Exception {
+        //given
+        CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        //When
+        when(cervejaService.listar()).thenReturn(Collections.singletonList(cervejaDTO));
+        //then
+        mockMvc.perform(get(CERVEJA_API_URL)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nome", is(cervejaDTO.getNome())))
+                .andExpect(jsonPath("$[0].marca", is(cervejaDTO.getMarca())))
+                .andExpect(jsonPath("$[0].tipoCerveja", is(cervejaDTO.getTipoCerveja().toString())));
+    }
+    @Test
+    void quandoGETListSemCervejaEntaoStatusOKRetornado() throws Exception {
+        //given
+        CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        //When
+        when(cervejaService.listar()).thenReturn(Collections.singletonList(cervejaDTO));
+        //then
+        mockMvc.perform(get(CERVEJA_API_URL)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void quandoDELETEChamadoComIdValidoEntaoRetornaStatusNoContent() throws Exception {
+        //given
+        CervejaDTO cervejaDTO = CervejaDTOBuilder.builder().build().getCervejaDTO();
+        //When
+        doNothing().when(cervejaService).deletaPorId(cervejaDTO.getId());
+        //then
+        mockMvc.perform(delete(CERVEJA_API_URL+"/"+cervejaDTO.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+    @Test
+    void quandoDELETEChamadoComIdInvalidoEntaoRetornaStatusNoContent() throws Exception {
+        //When
+        doThrow(BebidaNaoExisteException.class).when(cervejaService).deletaPorId(ID_CERVEJA_INVALIDO);
+        //then
+        mockMvc.perform(delete(CERVEJA_API_URL+"/"+ID_CERVEJA_INVALIDO)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
